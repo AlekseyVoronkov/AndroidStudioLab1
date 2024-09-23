@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_margin="10dp">
+
+
+    <EditText
+        android:id="@+id/editText"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="200dp"
+        android:hint="Sample Text"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+
+    <Button
+        android:id="@+id/btnBlackText"
+        android:layout_width="180dp"
+        android:layout_height="wrap_content"
+        android:text="Черный текст"
+        app:layout_constraintTop_toBottomOf="@id/editText"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/btnRedText"
+        android:layout_width="180dp"
+        android:layout_height="wrap_content"
+        android:text="Красный текст"
+        app:layout_constraintTop_toBottomOf="@id/editText"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <Button
+        android:id="@+id/btnSizeEight"
+        android:layout_width="180dp"
+        android:layout_height="wrap_content"
+        android:text="Размер - 8SP"
+        app:layout_constraintTop_toBottomOf="@id/btnBlackText"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/btnSize8x3"
+        android:layout_width="180dp"
+        android:layout_height="wrap_content"
+        android:text="Размер - 24SP"
+        app:layout_constraintTop_toBottomOf="@id/btnRedText"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <Button
+        android:id="@+id/btnWhiteBackground"
+        android:layout_width="180dp"
+        android:layout_height="wrap_content"
+        android:text="Белый фон"
+        app:layout_constraintTop_toBottomOf="@id/btnSizeEight"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/btnYellowBackground"
+        android:layout_width="180dp"
+        android:layout_height="wrap_content"
+        android:text="Желтый фон"
+        app:layout_constraintTop_toBottomOf="@id/btnSize8x3"
+        app:layout_constraintEnd_toEndOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>
