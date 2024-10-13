@@ -24,4 +24,10 @@
         android:layout_height="50dp"
         android:text="Get via HTTP"/>
 
+    <Button
+        android:id="@+id/secondBtnHTTP"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="get gud"/>
+
 </LinearLayout>
