@@ -15,10 +15,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import timber.log.Timber
-import timber.log.Timber.Forest.plant
 
 class MainActivity : AppCompatActivity() {
     private lateinit var myAdapter: ContactsAdapter
@@ -40,7 +43,7 @@ class MainActivity : AppCompatActivity() {
         searchButton.setOnClickListener {
             performSearch()
         }
-        plant(Timber.DebugTree())
+        Timber.plant(Timber.DebugTree())
         fetchContacts()
     }
 
@@ -57,14 +60,13 @@ class MainActivity : AppCompatActivity() {
         myAdapter.updateContacts(filteredContacts)
     }
 
-
     private fun fetchContacts() {
         val client = OkHttpClient()
         val request = Request.Builder()
             .url("https://drive.google.com/u/0/uc?id=1-KO-9GA3NzSgIc1dkAsNm8Dqw0fuPxcR&=download")
             .build()
 
-        Thread {
+        CoroutineScope(Dispatchers.IO).launch {
             try {
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) throw Exception("Error fetching data")
@@ -74,20 +76,23 @@ class MainActivity : AppCompatActivity() {
                         .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
                         .create()
 
-                    val contacts: List<Contact> = gson.fromJson(responseBody, Array<Contact>::class.java).toList()
+                    val contacts: List<Contact> =
+                        gson.fromJson(responseBody, Array<Contact>::class.java).toList()
+
                     contacts.forEach { contact ->
                         Timber.d("name: ${contact.name}, phone: ${contact.phone}, type: ${contact.type}")
                     }
-                    runOnUiThread {
-                        myAdapter = ContactsAdapter(this, contacts)
+
+                    withContext(Dispatchers.Main) {
+                        myAdapter = ContactsAdapter(contacts)
                         recyclerView.adapter = myAdapter
+                        contactsList = contacts
                     }
-                    contactsList = contacts
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error fetching contacts")
             }
-        }.start()
+        }
     }
 }
 
@@ -97,7 +102,7 @@ data class Contact(
     val type: String
 )
 
-class ContactsAdapter(private val context: Context, private var contacts: List<Contact>) : RecyclerView.Adapter<ContactsAdapter.ContactsViewHolder>() {
+class ContactsAdapter(private var contacts: List<Contact>) : RecyclerView.Adapter<ContactsAdapter.ContactsViewHolder>() {
 
     class ContactsViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val textName: TextView = itemView.findViewById(R.id.textName)
