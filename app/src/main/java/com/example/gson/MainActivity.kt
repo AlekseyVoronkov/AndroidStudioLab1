@@ -15,14 +15,20 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import timber.log.Timber
-import timber.log.Timber.Forest.plant
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
+import timber.log.Timber
 
 class MainActivity : AppCompatActivity() {
+    private val client = OkHttpClient()
+    private val scope = CoroutineScope(Dispatchers.Main)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -33,43 +39,46 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        plant(Timber.DebugTree())
-        val client = OkHttpClient()
+        Timber.plant(Timber.DebugTree())
+        fetchImages()
+    }
+
+    private fun fetchImages() {
         val request = Request.Builder()
             .url("https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=ff49fcd4d4a08aa6aafb6ea3de826464&tags=cat&format=json&nojsoncallback=1")
             .build()
-        var links: List<String>
 
-        Thread {
+        scope.launch(Dispatchers.IO) {
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) throw Exception("Error fetching images")
 
-            client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) throw Exception("error")
+            val gson = GsonBuilder()
+                .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+                .create()
 
-                val gson = GsonBuilder()
-                    .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-                    .create()
+            val wrapper = gson.fromJson(response.body()?.string(), Wrapper::class.java)
 
-                val wrapper = gson.fromJson(response.body()?.string(), Wrapper::class.java)
-
-                wrapper.photos.photo.forEachIndexed { index, photo ->
-                    if (index % 5 == 0) {
-                        Timber.d("id: ${photo.id}, owner: ${photo.owner}, secret = ${photo.secret}, server = ${photo.server}, farm = ${photo.farm}, title: ${photo.title}, ispublic = ${photo.ispublic}, isfriend = ${photo.isfriend},isfamily= ${photo.isfamily}")
-                    }
-                }
-                links = wrapper.photos.photo.map { photo ->
-                    "https://farm${photo.farm}.staticflickr.com/${photo.server}/${photo.id}_${photo.secret}_z.jpg\n"
-                }
-                runOnUiThread {
-                    displayImageList(this, links)
+            wrapper.photos.photo.forEachIndexed { index, photo ->
+                if (index % 5 == 0) {
+                    Timber.d("id: ${photo.id}, owner: ${photo.owner}, secret = ${photo.secret}, server = ${photo.server}, farm = ${photo.farm}, title: ${photo.title}, ispublic = ${photo.ispublic}, isfriend = ${photo.isfriend},isfamily= ${photo.isfamily}")
                 }
             }
-        }.start()
+
+            val links = wrapper.photos.photo.map { photo ->
+                "https://farm${photo.farm}.staticflickr.com/${photo.server}/${photo.id}_${photo.secret}_z.jpg"
+
+            }
+
+            withContext(Dispatchers.Main) {
+                displayImageList(links)
+            }
+        }
     }
 
-    private fun displayImageList(inputContext: Context, imageUrlList: List<String>) {
+    private fun displayImageList(imageUrlList: List<String>) {
         val recyclerView: RecyclerView = findViewById(R.id.rView)
         recyclerView.layoutManager = GridLayoutManager(this, 2)
-        recyclerView.adapter = PhotoAdapter(inputContext, imageUrlList)
+        recyclerView.adapter = PhotoAdapter(imageUrlList)
     }
 }
 
@@ -97,7 +106,7 @@ data class Wrapper(
     val photos: PhotoPage
 )
 
-class PhotoAdapter(private val context: Context, private val photos: List<String>) : RecyclerView.Adapter<PhotoAdapter.PhotoViewHolder>() {
+class PhotoAdapter(private val photos: List<String>) : RecyclerView.Adapter<PhotoAdapter.PhotoViewHolder>() {
 
     class PhotoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val imageView: ImageView = itemView.findViewById(R.id.rViewIV)
@@ -110,12 +119,10 @@ class PhotoAdapter(private val context: Context, private val photos: List<String
 
     override fun onBindViewHolder(holder: PhotoViewHolder, position: Int) {
         val photo = photos[position]
-
-
-        Glide.with(context).load(photo).into(holder.imageView)
+        Glide.with(holder.imageView.context).load(photo).into(holder.imageView)
 
         holder.imageView.setOnClickListener {
-            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clipboard = holder.imageView.context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("Image URL", photo)
             clipboard.setPrimaryClip(clip)
             Timber.i("Image URL copied: $photo")
@@ -124,4 +131,3 @@ class PhotoAdapter(private val context: Context, private val photos: List<String
 
     override fun getItemCount(): Int = photos.size
 }
-
