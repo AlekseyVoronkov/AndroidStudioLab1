@@ -4,33 +4,37 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Adapter
 import android.widget.ImageView
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat.startActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.google.android.material.snackbar.Snackbar
+import com.google.gson.FieldNamingPolicy
+import com.google.gson.GsonBuilder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import com.google.gson.FieldNamingPolicy
-import com.google.gson.GsonBuilder
 import timber.log.Timber
+
 
 class MainActivity : AppCompatActivity() {
     private val client = OkHttpClient()
     private val scope = CoroutineScope(Dispatchers.Main)
+    lateinit var mStartForResult: ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,7 +48,27 @@ class MainActivity : AppCompatActivity() {
 
         Timber.plant(Timber.DebugTree())
         fetchImages()
-    }
+
+        mStartForResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                    if (result.resultCode == RESULT_OK) {
+                        val snackbar = Snackbar.make(
+                            findViewById(R.id.main),
+                            "Картинка добавлена в избранное",
+                            Snackbar.LENGTH_LONG
+                        )
+
+                        snackbar.setAction("Открыть") {
+                            val browserIntent = Intent(
+                                Intent.ACTION_VIEW,
+                                Uri.parse(result.data?.getStringExtra("favPicLink") ?: "")
+                            )
+                            startActivity(browserIntent)
+                        }
+                        snackbar.show()
+                    }
+                }
+            }
+
 
     private fun fetchImages() {
         val request = Request.Builder()
@@ -81,9 +105,9 @@ class MainActivity : AppCompatActivity() {
     private fun displayImageList(imageUrlList: List<String>) {
         val recyclerView: RecyclerView = findViewById(R.id.rView)
         recyclerView.layoutManager = GridLayoutManager(this, 2)
-        recyclerView.adapter = PhotoAdapter(imageUrlList)
+        recyclerView.adapter = PhotoAdapter(imageUrlList, this)
+        }
     }
-}
 
 data class Photo(
     val id: String,
@@ -109,7 +133,7 @@ data class Wrapper(
     val photos: PhotoPage
 )
 
-class PhotoAdapter(private val photos: List<String>) : RecyclerView.Adapter<PhotoAdapter.PhotoViewHolder>() {
+class PhotoAdapter(private val photos: List<String>, private val listener: MainActivity) : RecyclerView.Adapter<PhotoAdapter.PhotoViewHolder>() {
 
     class PhotoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val imageView: ImageView = itemView.findViewById(R.id.rViewIV)
@@ -121,6 +145,7 @@ class PhotoAdapter(private val photos: List<String>) : RecyclerView.Adapter<Phot
     }
 
     override fun onBindViewHolder(holder: PhotoViewHolder, position: Int) {
+
         val photo = photos[position]
         Glide.with(holder.imageView.context).load(photo).into(holder.imageView)
 
@@ -138,9 +163,10 @@ class PhotoAdapter(private val photos: List<String>) : RecyclerView.Adapter<Phot
                 putExtra("picLink", photo)
 
             }
-            it.context.startActivity(intent)
+            listener.mStartForResult.launch(intent)
         }
     }
 
     override fun getItemCount(): Int = photos.size
+
 }

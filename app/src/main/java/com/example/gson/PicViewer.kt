@@ -1,5 +1,6 @@
 package com.example.gson
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -25,7 +26,7 @@ class PicViewer : AppCompatActivity() {
 
 
 
-        val toolbar: Toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
+        val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
 
         val picLink = intent.getStringExtra("picLink")
@@ -48,8 +49,13 @@ class PicViewer : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == R.id.action_favorite) {
             Toast.makeText(this, "Added to Favorites", Toast.LENGTH_SHORT).show()
+            val favoriteIntent = Intent().apply {
+                putExtra("favPicLink", intent.getStringExtra("picLink"))
+                putExtra("info", "added to favorites")
+            }
+            setResult(RESULT_OK, favoriteIntent)
+            finish()
         }
-        return true;
-
+        return super.onOptionsItemSelected(item)
     }
 }
