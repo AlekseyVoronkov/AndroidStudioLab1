@@ -3,13 +3,16 @@ package com.example.gson
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Adapter
 import android.widget.ImageView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat.startActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.GridLayoutManager
@@ -122,10 +125,20 @@ class PhotoAdapter(private val photos: List<String>) : RecyclerView.Adapter<Phot
         Glide.with(holder.imageView.context).load(photo).into(holder.imageView)
 
         holder.imageView.setOnClickListener {
-            val clipboard = holder.imageView.context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clipboard =
+                holder.imageView.context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("Image URL", photo)
             clipboard.setPrimaryClip(clip)
             Timber.i("Image URL copied: $photo")
+
+            val intent = Intent(
+                it.context,
+                PicViewer::class.java
+            ).apply {
+                putExtra("picLink", photo)
+
+            }
+            it.context.startActivity(intent)
         }
     }
 
