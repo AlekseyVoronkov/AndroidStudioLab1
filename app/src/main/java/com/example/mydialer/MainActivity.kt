@@ -2,6 +2,8 @@ package com.example.mydialer
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.text.TextWatcher
 import android.view.LayoutInflater
@@ -14,6 +16,7 @@ import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
@@ -42,20 +45,13 @@ class MainActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
 
         searchEditText.addTextChangedListener(object : TextWatcher {
-
             override fun afterTextChanged(s: Editable) {}
 
-            override fun beforeTextChanged(
-                s: CharSequence, start: Int,
-                count: Int, after: Int
-            ) {
-            }
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
 
-            override fun onTextChanged(
-                s: CharSequence, start: Int,
-                before: Int, count: Int
-            ) {
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 performSearch()
+                myAdapter.notifyDataSetChanged()
             }
         })
 
@@ -100,7 +96,7 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     withContext(Dispatchers.Main) {
-                        myAdapter = ContactsAdapter(contacts)
+                        myAdapter = ContactsAdapter()
                         recyclerView.adapter = myAdapter
                         contactsList = contacts
                     }
@@ -118,20 +114,31 @@ data class Contact(
     val type: String
 )
 
-class ContactsAdapter(private var contacts: List<Contact>) : RecyclerView.Adapter<ContactsAdapter.ContactsViewHolder>() {
+class ContactsAdapter : ListAdapter<Contact, ContactsAdapter.ContactViewHolder>(ContactDiffCallback()) {
+    private var contacts: List<Contact> = listOf()
 
-    class ContactsViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    class ContactViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val textName: TextView = itemView.findViewById(R.id.textName)
         val textPhone: TextView = itemView.findViewById(R.id.textPhone)
         val textType: TextView = itemView.findViewById(R.id.textType)
+
+        init {
+            itemView.setOnClickListener {
+                val phoneNumber = textPhone.text.toString()
+                val intent = Intent(Intent.ACTION_DIAL).apply {
+                    data = Uri.parse("tel:$phoneNumber")
+                }
+                itemView.context.startActivity(intent)
+            }
+        }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ContactsViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ContactViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.rview_item, parent, false)
-        return ContactsViewHolder(view)
+        return ContactViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: ContactsViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: ContactViewHolder, position: Int) {
         holder.textName.text = contacts[position].name
         holder.textPhone.text = contacts[position].phone
         holder.textType.text = contacts[position].type
