@@ -3,11 +3,13 @@ package com.example.mydialer
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
+import android.text.Editable
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -27,22 +29,36 @@ class MainActivity : AppCompatActivity() {
     private lateinit var myAdapter: ContactsAdapter
     private lateinit var recyclerView: RecyclerView
     private lateinit var searchEditText: EditText
-    private lateinit var searchButton: Button
     private var contactsList: List<Contact> = listOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
+        setSupportActionBar(findViewById(R.id.my_toolbar))
 
         recyclerView = findViewById(R.id.rView)
         searchEditText = findViewById(R.id.et_search)
-        searchButton = findViewById(R.id.btn_search)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        searchButton.setOnClickListener {
-            performSearch()
-        }
+        searchEditText.addTextChangedListener(object : TextWatcher {
+
+            override fun afterTextChanged(s: Editable) {}
+
+            override fun beforeTextChanged(
+                s: CharSequence, start: Int,
+                count: Int, after: Int
+            ) {
+            }
+
+            override fun onTextChanged(
+                s: CharSequence, start: Int,
+                before: Int, count: Int
+            ) {
+                performSearch()
+            }
+        })
+
         Timber.plant(Timber.DebugTree())
         fetchContacts()
     }
