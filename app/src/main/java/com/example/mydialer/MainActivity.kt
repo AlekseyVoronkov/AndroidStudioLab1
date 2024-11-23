@@ -9,7 +9,6 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.EditText
 import android.text.Editable
 import android.widget.TextView
@@ -44,8 +43,14 @@ class MainActivity : AppCompatActivity() {
         searchEditText = findViewById(R.id.et_search)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
+        val sharedPreferences = getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+        val savedFilter = sharedPreferences.getString("SEARCH_FILTER", "")
+        searchEditText.setText(savedFilter)
+
         searchEditText.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable) {}
+            override fun afterTextChanged(s: Editable) {
+                sharedPreferences.edit().putString("SEARCH_FILTER", s.toString()).apply()
+            }
 
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
 
